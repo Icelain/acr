@@ -1,1 +1,1 @@
-module github.com/Icelain/Acreage
+module github.com/Icelain/acr
