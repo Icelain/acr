@@ -10,4 +10,4 @@ If you have go installed,
 ```
 go get -u github.com/icelain/acr && go install github.com/icelain/acr
 ```
-Or you can get the binary tarballs from the releases page.
+Or you can get the binary executables from the releases page.
