@@ -76,7 +76,7 @@ func fileWalk(directory string, args ...[]string){
 			return nil	
 		})
 	}
-
+	//scanning paths
 	sg.Add(len(scannablePaths))
 	for _, v := range scannablePaths{
 		go func(v string){
