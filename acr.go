@@ -4,13 +4,15 @@ import (
 	"fmt"
 	"path/filepath"
 	"os"
-	"bufio"
+	"io/ioutil"
 	"github.com/fatih/color"
 	"strconv"
 	"strings"
+	"sync"
 )
 
 var lines int = 0
+var sg sync.WaitGroup
 
 //Plan on shifting to the flag stdlib from os.Args
 func handleArgs(args []string) []string{
@@ -43,25 +45,23 @@ func checkSuffix(path string, args []string) bool{
 // Checks lines one file at a time
 func checkLines(path string){
 
-	dat, _ := os.Open(path)
-	defer dat.Close()
-	scanner := bufio.NewScanner(dat)
-
-	for scanner.Scan(){
-		lines++
-	}
+	dat, _ := ioutil.ReadFile(path)
+	lines = lines + len(strings.Split(string(dat),"\n"))
 	
 }
 
 //Main logic
 func fileWalk(directory string, args ...[]string){
+
+	scannablePaths := []string{}
+
 	if len(args) !=0{
 		filepath.Walk(directory, func(path string, fileinfo os.FileInfo, err error)error{
 			if err !=nil{
-				panic(err)
+				color.Red(err.Error())
 			}
 			if !fileinfo.IsDir() && checkSuffix(path, args[0]){
-				checkLines(path)
+				scannablePaths = append(scannablePaths,path)
 			}
 			return nil	
 		})
@@ -71,11 +71,21 @@ func fileWalk(directory string, args ...[]string){
 				panic(err)
 			}
 			if !fileinfo.IsDir(){
-				checkLines(path)
+				scannablePaths = append(scannablePaths,path)
 			}
 			return nil	
 		})
 	}
+
+	sg.Add(len(scannablePaths))
+	for _, v := range scannablePaths{
+		go func(v string){
+			defer sg.Done()
+			checkLines(v)
+		}(v)
+	}
+
+	sg.Wait()
 	
 }
 
@@ -90,6 +100,7 @@ func checkArgs(args []string) []string{
 }
 
 func main(){
+	color.Blue("scanning...")
 	resp := checkArgs(os.Args)
 	d ,_ := os.Getwd()
 	if resp[0] == ""{
