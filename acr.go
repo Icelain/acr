@@ -11,7 +11,6 @@ import (
 	"sync"
 )
 
-var lines int = 0
 var sg sync.WaitGroup
 
 //Plan on shifting to the flag stdlib from os.Args
@@ -43,16 +42,16 @@ func checkSuffix(path string, args []string) bool{
 }
 
 // Checks lines one file at a time
-func checkLines(path string){
+func checkLines(path string, lines *int){
 
 	dat, _ := ioutil.ReadFile(path)
-	lines = lines + len(strings.Split(string(dat),"\n"))
+	*lines = *lines + len(strings.Split(string(dat),"\n"))
 	
 }
 
 //Main logic
-func fileWalk(directory string, args ...[]string){
-
+func fileWalk(directory string, args ...[]string) int{
+	var lines int = 0
 	scannablePaths := []string{}
 
 	if len(args) !=0{
@@ -76,17 +75,17 @@ func fileWalk(directory string, args ...[]string){
 			return nil	
 		})
 	}
-	//scanning paths
+	linePtr := &lines
 	sg.Add(len(scannablePaths))
 	for _, v := range scannablePaths{
 		go func(v string){
 			defer sg.Done()
-			checkLines(v)
+			checkLines(v,linePtr)
 		}(v)
 	}
 
 	sg.Wait()
-	
+	return lines
 }
 
 func checkArgs(args []string) []string{
@@ -100,14 +99,18 @@ func checkArgs(args []string) []string{
 }
 
 func main(){
+	var lines int
 	color.Blue("scanning...")
 	resp := checkArgs(os.Args)
 	d ,_ := os.Getwd()
 	if resp[0] == ""{
-		fileWalk(d)
-	}  else{
-		fileWalk(d, resp)
+		lines = fileWalk(d)
+	} else{
+		lines = fileWalk(d, resp)
+		
 	}
+
+
 	
 	amount := color.CyanString(strconv.Itoa(lines))
 	firstphrase := color.GreenString("The directory has ")
